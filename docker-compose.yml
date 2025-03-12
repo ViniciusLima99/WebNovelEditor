@@ -4,13 +4,13 @@ services:
   mysql:
     image: mysql:8.0
     environment:
-      MYSQL_ROOT_PASSWORD: macagucho
+      MYSQL_ROOT_PASSWORD: SUA_SENHA       #COLOQUE SUA SENHA AQUI
       MYSQL_DATABASE: webnovel_db
       MYSQL_ROOT_HOST: '%'
     ports:
       - "3307:3306"
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-u", "root", "-pmacagucho"]
+      test: ["CMD", "mysqladmin", "ping", "-u", "root", "-pSUA_SENHA"]      #COLOQUE SUA SENHA AQUI
       interval: 5s
       timeout: 30s
       retries: 10
@@ -42,7 +42,7 @@ services:
     environment:
       DB_HOST: mysql
       DB_USER: root
-      DB_PASSWORD: macagucho
+      DB_PASSWORD: SUA_SENHA                #COLOQUE SUA SENHA AQUI
       DB_NAME: webnovel_db
     depends_on:
       mysql:

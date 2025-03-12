@@ -1,0 +1,78 @@
+# .gitlab-ci.yml
+stages:
+  - prebuild
+  - build
+  - deploy
+
+variables:
+  DOCKER_DRIVER: overlay2
+  DOCKER_TLS_CERTDIR: ""
+  DOCKER_HOST: "unix:///var/run/docker.sock"
+  REGISTRY: registry.gitlab.com/SEU_PROJETO
+  IMAGE_TAG: latest
+  COMPOSE_PROJECT_NAME: webnoveleditor
+  COMPOSE_FILE: docker-compose.yml
+  RUN_PREBUILD: true
+  RUN_BUILD_BACKEND: true
+  RUN_BUILD_FRONTEND: true
+  RUN_DEPLOY: true 
+
+  FULL_SQL_PATH: CAMINHO_COMPLETO_PARA_O_init.sql_NA_MAQUINA:/docker-entrypoint-initdb.d/init.sql
+
+prebuild:
+  stage: prebuild
+  image: docker:latest
+  services:
+    - docker:dind
+  before_script:
+    - echo "$CI_REGISTRY_PASSWORD" | docker login -u "$CI_REGISTRY_USER" --password-stdin $CI_REGISTRY
+  script:
+    - docker system prune -af
+    - docker image prune -a --force
+  rules:
+    - if: '$RUN_PREBUILD == "true"'
+      when: on_success
+
+build-backend:
+  stage: build
+  image: docker:latest
+  services:
+    - docker:dind
+  before_script:
+    - echo "$CI_REGISTRY_PASSWORD" | docker login -u "$CI_REGISTRY_USER" --password-stdin $CI_REGISTRY
+  script:
+    - docker build --no-cache --force-rm -t $REGISTRY/backend:latest ./backend
+    - docker push $REGISTRY/backend:latest
+  rules:
+    - if: '$RUN_BUILD_BACKEND == "true"'
+      when: on_success
+
+build-frontend:
+  stage: build
+  image: docker:latest
+  services:
+    - docker:dind
+  before_script:
+    - echo "$CI_REGISTRY_PASSWORD" | docker login -u "$CI_REGISTRY_USER" --password-stdin $CI_REGISTRY
+  script:
+    - docker build --no-cache --force-rm -t $REGISTRY/frontend:latest ./frontend
+    - docker push $REGISTRY/frontend:latest
+  rules:
+    - if: '$RUN_BUILD_FRONTEND == "true"'
+      when: on_success
+
+deploy:
+  stage: deploy
+  image: docker:latest
+  services:
+    - docker:dind
+  before_script:
+    - apk add --no-cache docker-compose
+    - echo "$CI_REGISTRY_PASSWORD" | docker login -u "$CI_REGISTRY_USER" --password-stdin $CI_REGISTRY
+  script:
+    - docker-compose down
+    - docker-compose pull
+    - docker-compose up -d --force-recreate
+  rules:
+    - if: '$RUN_DEPLOY == "true"'
+      when: on_success
